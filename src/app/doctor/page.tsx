@@ -57,49 +57,69 @@ export default function DoctorPage() {
   if (!mounted) return null;
 
   const handleUserLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const storedAdminCode = localStorage.getItem('adminLoginCode') || 'adnan@10002';
-    if (userId === 'admin' && userCode === storedAdminCode) {
-      localStorage.setItem('isUserLoggedIn', 'true');
-      localStorage.setItem('currentUserId', 'admin');
-      setIsUserLoggedIn(true);
+  e.preventDefault();
+
+  const storedAdminCode =
+    localStorage.getItem('adminLoginCode') ?? 'adnan@10002';
+
+  const inputId = userId.trim();
+  const inputCode = userCode.trim();
+
+  // ✅ ADMIN LOGIN
+  if (inputId === 'admin' && inputCode === storedAdminCode.trim()) {
+    localStorage.setItem('isUserLoggedIn', 'true');
+    localStorage.setItem('currentUserId', 'admin');
+
+    setIsUserLoggedIn(true);
+
+    toast({
+      title: "Login Successful",
+      description: "Welcome, Admin.",
+    });
+
+    return;
+  }
+
+  // ✅ NORMAL USER LOGIN
+  const savedUsers = localStorage.getItem('registeredUsers');
+  const users = savedUsers ? JSON.parse(savedUsers) : [];
+
+  const matchedUser = users.find(
+    (u: any) =>
+      u.id?.trim() === inputId &&
+      u.code?.trim() === inputCode
+  );
+
+  if (matchedUser) {
+    if (matchedUser.status === 'Disabled') {
       toast({
-        title: "Login Successful",
-        description: "Welcome, Admin.",
+        variant: 'destructive',
+        title: t.disabled,
+        description: "Your account is disabled. Please contact admin.",
       });
       return;
     }
 
-    const savedUsers = localStorage.getItem('registeredUsers');
-    const users = savedUsers ? JSON.parse(savedUsers) : [];
-    const matchedUser = users.find((u: any) => u.id === userId && u.code === userCode);
-    
-    if (matchedUser) {
-      if (matchedUser.status === 'Disabled') {
-        toast({
-          variant: 'destructive',
-          title: t.disabled,
-          description: "Your account is disabled. Please contact admin.",
-        });
-        return;
-      }
-      
-      localStorage.setItem('isUserLoggedIn', 'true');
-      localStorage.setItem('currentUserId', matchedUser.id);
-      setIsUserLoggedIn(true);
-      toast({
-        title: "Login Successful",
-        description: `Welcome, ${matchedUser.name}.`,
-      });
-    } else {
-      toast({
-        variant: 'destructive',
-        title: t.invalidCredentials,
-        description: "Please check your ID and Code.",
-      });
-    }
-  };
+    localStorage.setItem('isUserLoggedIn', 'true');
+    localStorage.setItem('currentUserId', matchedUser.id);
+
+    setIsUserLoggedIn(true);
+
+    toast({
+      title: "Login Successful",
+      description: `Welcome, ${matchedUser.name}.`,
+    });
+
+    return;
+  }
+
+  // ❌ INVALID LOGIN
+  toast({
+    variant: 'destructive',
+    title: t.invalidCredentials,
+    description: "Please check your ID and Code.",
+  });
+};
 
   const handleUserLogout = () => {
     localStorage.removeItem('isUserLoggedIn');
