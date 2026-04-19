@@ -1,7 +1,8 @@
-
 'use client';
 
 import React, {useState, useEffect, useRef} from 'react';
+import {useRouter} from 'next/navigation';
+
 import {useLanguage} from '@/components/LanguageProvider';
 import {useAppLogo} from '@/components/AppLogoProvider';
 import {
@@ -72,6 +73,7 @@ export default function AdminPage() {
   const auth = useAuth();
   const [mounted, setMounted] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const router = useRouter();
   const [userIdInput, setUserIdInput] = useState('');
   const [loginCodeInput, setLoginCodeInput] = useState('');
   
@@ -87,6 +89,19 @@ export default function AdminPage() {
   const [securityMode, setSecurityMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cropPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+  setMounted(true);
+
+  const isAdminLocal = localStorage.getItem('isAdmin') === 'true';
+
+  if (!isAdminLocal) {
+    router.push('/'); // not admin → go home
+    return;
+  }
+
+  setIsAdmin(true);
+}, []);
   
   // User Management State
   const [users, setUsers] = useState<RegisteredUser[]>([]);
