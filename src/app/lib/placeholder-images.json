@@ -1,0 +1,17 @@
+
+{
+  "placeholderImages": [
+    {
+      "id": "hero-bg",
+      "description": "Lush green farm field with healthy crops",
+      "imageUrl": "https://picsum.photos/seed/farm1/1200/600",
+      "imageHint": "farm field"
+    },
+    {
+      "id": "example-tomato",
+      "description": "Healthy tomato plant leaf",
+      "imageUrl": "https://picsum.photos/seed/tomato/400/300",
+      "imageHint": "tomato leaf"
+    }
+  ]
+}

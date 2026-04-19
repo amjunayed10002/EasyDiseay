@@ -1,0 +1,124 @@
+
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a registered user of the EasyDiseay application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name or display name of the user."
+        },
+        "role": {
+          "type": "string",
+          "description": "The role assigned to the user."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the user account was created.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating the last time the user account was updated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name",
+        "role",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Crop": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Crop",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "nameBn": { "type": "string" }
+      },
+      "required": ["id", "nameEn", "nameBn"]
+    },
+    "Disease": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Disease",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nameEn": { "type": "string" },
+        "nameBn": { "type": "string" }
+      },
+      "required": ["id", "nameEn", "nameBn"]
+    },
+    "AnalysisReport": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AnalysisReport",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "cropId": { "type": "string" },
+        "uploadedImageUrl": { "type": "string", "format": "uri" },
+        "detectedDiseaseIds": { "type": "array", "items": { "type": "string" } },
+        "analysisDateTime": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "uploadedImageUrl", "detectedDiseaseIds", "analysisDateTime"]
+    },
+    "SiteStats": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SiteStats",
+      "type": "object",
+      "properties": {
+        "visitorCount": { "type": "number", "description": "Total number of site visitors." },
+        "showVisitorCount": { "type": "boolean", "description": "Whether to display the count publicly." },
+        "logoUrl": { "type": "string", "description": "Global persistent application logo." },
+        "adminEmail": { "type": "string", "format": "email" },
+        "adminPhone": { "type": "string" },
+        "securityMode": { "type": "boolean", "description": "Whether user login is required globally." }
+      },
+      "required": ["visitorCount", "showVisitorCount"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": { "$ref": "#/backend/entities/User" },
+          "description": "Stores individual user profiles."
+        }
+      },
+      {
+        "path": "/stats/main",
+        "definition": {
+          "entityName": "SiteStats",
+          "schema": { "$ref": "#/backend/entities/SiteStats" },
+          "description": "Global website statistics and toggles."
+        }
+      }
+    ]
+  }
+}
