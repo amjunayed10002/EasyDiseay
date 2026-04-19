@@ -1,5 +1,5 @@
-# Firebase Studio
+# EasyDiseay
 
-This is a NextJS starter in Firebase Studio.
+AI-powered crop disease detection and treatment suggestion app.
 
-To get started, take a look at src/app/page.tsx.
+Built with Next.js, Firebase, and Genkit AI.

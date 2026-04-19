@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  "projectId": "studio-6127486285-8569b",
-  "appId": "1:333282461969:web:a8aa379a75a0e2ced8a4b0",
-  "apiKey": "AIzaSyAM9mP0rb5usKXwVEi7RFRbwYzEaqs5TSs",
-  "authDomain": "studio-6127486285-8569b.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "333282461969"
+  apiKey: "AIzaSyBBdL4VZ5B94KMzjLtKFyb09_C_I6G4G3o",
+  authDomain: "easydiseay.firebaseapp.com",
+  projectId: "easydiseay",
+  storageBucket: "easydiseay.firebasestorage.app",
+  messagingSenderId: "238578239030",
+  appId: "1:238578239030:web:a10d11fbb4650e1b1e3a97"
 };
