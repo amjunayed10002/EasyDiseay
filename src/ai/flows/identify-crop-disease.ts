@@ -27,23 +27,6 @@ export async function identifyCropDisease(input: any) {
   }
 }
 
-const prompt = ai.definePrompt({
-  name: 'identifyCropDiseasePrompt',
-  input: { schema: IdentifyCropDiseaseInputSchema },
-  output: { schema: IdentifyCropDiseaseOutputSchema },
-  prompt: `
-You are an expert agricultural specialist.
-
-Analyze crop image and identify disease.
-
-Crop Type: {{cropType}}
-Language: {{language}}
-
-Image: {{media url=photoDataUri}}
-`,
-  model: 'googleai/gemini-2.5-flash',
-});
-
 const identifyCropDiseaseFlow = ai.defineFlow(
   {
     name: 'identifyCropDiseaseFlow',
@@ -51,8 +34,34 @@ const identifyCropDiseaseFlow = ai.defineFlow(
     outputSchema: IdentifyCropDiseaseOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output ?? {
+    // Parse data URI
+    const dataUriMatch = input.photoDataUri.match(/^data:([^;]+);base64,(.+)$/);
+    if (!dataUriMatch) {
+      throw new Error('Invalid data URI format');
+    }
+
+    const contentType = dataUriMatch[1];
+    const base64Data = dataUriMatch[2];
+
+    const result = await ai.generate({
+      model: 'googleai/gemini-1.5-flash',
+      prompt: [
+        {
+          text: `You are an expert agricultural specialist. Analyze this crop image and identify if it's diseased. Provide a detailed analysis in ${input.language || 'English'}.${input.cropType ? ` The crop type is: ${input.cropType}` : ''}`
+        },
+        {
+          media: {
+            contentType,
+            data: base64Data,
+          }
+        }
+      ],
+      output: {
+        schema: IdentifyCropDiseaseOutputSchema,
+      },
+    });
+
+    return result.output() ?? {
       isDiseased: false,
       diseaseName: null,
       symptoms: null,

@@ -26,9 +26,26 @@ import {
   LayoutGrid,
   Columns
 } from 'lucide-react';
-import {identifyCropDisease, IdentifyCropDiseaseOutput} from '@/ai/flows/identify-crop-disease';
-import {generateTreatmentAdvice, GenerateTreatmentAdviceOutput} from '@/ai/flows/generate-treatment-advice';
 import {cn} from '@/lib/utils';
+
+// Type definitions for AI responses (moved from server-side flows for security)
+interface IdentifyCropDiseaseOutput {
+  isDiseased: boolean;
+  diseaseName: string | null;
+  symptoms: string | null;
+  confidenceScore: number | null;
+  diagnosticNotes?: string;
+}
+
+interface GenerateTreatmentAdviceOutput {
+  diseaseName: string;
+  severity: 'Low' | 'Medium' | 'High';
+  howItHappens: string;
+  whyItHappens: string;
+  recoverySolution: string;
+  medicines: string;
+  summary: string;
+}
 
 export function CropDoctorApp() {
   const {t, language, setLanguage} = useLanguage();
@@ -51,24 +68,54 @@ export function CropDoctorApp() {
     const targetLang = language === 'bn' ? 'Bengali' : 'English';
 
     try {
-      const diagResult = await identifyCropDisease({
-        photoDataUri: photoUri,
-        cropType: cropType || undefined,
-        language: targetLang,
+      // Call the secure API route instead of direct AI function
+      const response = await fetch('/api/analyze-disease', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          photoDataUri: photoUri,
+          cropType: cropType || undefined,
+          language: targetLang,
+        }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      const diagResult = await response.json();
       setDiagnosis(diagResult);
 
       if (diagResult.isDiseased && diagResult.diseaseName) {
-        const treatResult = await generateTreatmentAdvice({
-          diseaseName: diagResult.diseaseName,
-          cropType: cropType || undefined,
-          language: targetLang,
+        // Call the secure treatment advice API route
+        const treatResponse = await fetch('/api/treatment-advice', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            diseaseName: diagResult.diseaseName,
+            cropType: cropType || undefined,
+            language: targetLang,
+          }),
         });
+
+        if (!treatResponse.ok) {
+          const errorData = await treatResponse.json();
+          throw new Error(errorData.error || 'Treatment advice failed');
+        }
+
+        const treatResult = await treatResponse.json();
         setTreatment(treatResult);
       }
     } catch (err) {
-      console.error(err);
-      setError(t.error);
+      console.error('AI Analysis Error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorText = t?.error || 'Something went wrong. Please try again.';
+      setError(`${errorText} (${errorMessage})`);
     } finally {
       setIsLoading(false);
     }
@@ -186,8 +233,8 @@ export function CropDoctorApp() {
               <div className="flex items-center gap-3">
                 <Leaf className="w-6 h-6 text-[#1b7d3d]" />
                 <span className="text-xl font-bold lowercase">{cropType || 'Crop'}</span>
-                <Badge variant={diagnosis.isDiseased ? "destructive" : "default"} className="flex gap-1.5 px-3 py-1 text-xs italic font-bold">
-                  {diagnosis.isDiseased ? (
+                <Badge variant={diagnosis?.isDiseased ? "destructive" : "default"} className="flex gap-1.5 px-3 py-1 text-xs italic font-bold">
+                  {diagnosis?.isDiseased ? (
                     <>
                       <AlertTriangle className="w-3 h-3" />
                       {t.diseased}
@@ -201,7 +248,7 @@ export function CropDoctorApp() {
                 </Badge>
               </div>
               <p className="text-muted-foreground leading-relaxed">
-                {treatment?.summary || diagnosis.diagnosticNotes || diagnosis.symptoms || t.noDiseaseFound}
+                {treatment?.summary || diagnosis?.diagnosticNotes || diagnosis?.symptoms || t.noDiseaseFound}
               </p>
             </CardContent>
           </Card>
@@ -249,7 +296,7 @@ export function CropDoctorApp() {
                   <TableBody>
                     <TableRow className="border-b border-[#e1e9e4] hover:bg-transparent">
                       <TableCell className="bg-[#1b7d3d]/5 font-semibold text-[#1b7d3d]">{t.diseaseName}</TableCell>
-                      <TableCell className="font-medium">{treatment?.diseaseName || diagnosis.diseaseName || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">{treatment?.diseaseName || diagnosis?.diseaseName || 'N/A'}</TableCell>
                     </TableRow>
                     <TableRow className="border-b border-[#e1e9e4] hover:bg-transparent">
                       <TableCell className="bg-[#1b7d3d]/5 font-semibold text-[#1b7d3d]">{t.severity}</TableCell>
@@ -297,7 +344,7 @@ export function CropDoctorApp() {
                   </TableHeader>
                   <TableBody>
                     <TableRow className="hover:bg-transparent">
-                      <TableCell className="font-medium">{treatment?.diseaseName || diagnosis.diseaseName || 'N/A'}</TableCell>
+                      <TableCell className="font-medium">{treatment?.diseaseName || diagnosis?.diseaseName || 'N/A'}</TableCell>
                       <TableCell>
                         {treatment ? (
                           <Badge variant="outline" className={cn(
