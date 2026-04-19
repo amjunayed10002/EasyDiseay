@@ -23,7 +23,6 @@ export default function DoctorPage() {
   const db = useFirestore();
   const [mounted, setMounted] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [securityMode, setSecurityMode] = useState(false);
   const [isUserLoggedIn, setIsUserLoggedIn] = useState(false);
   const [showRegisterInfo, setShowRegisterInfo] = useState(false);
   
@@ -35,7 +34,7 @@ export default function DoctorPage() {
 
   // Stats logic for global config
   const statsRef = useMemoFirebase(() => doc(db, 'stats', 'main'), [db]);
-  const { data: statsData } = useDoc(statsRef);
+  const { data: statsData, isLoading: statsLoading } = useDoc(statsRef);
 
   useEffect(() => {
     setMounted(true);
@@ -48,7 +47,6 @@ export default function DoctorPage() {
 
   useEffect(() => {
     if (statsData) {
-      setSecurityMode(!!statsData.securityMode);
       if (statsData.adminEmail) setAdminEmail(statsData.adminEmail);
       if (statsData.adminPhone) setAdminPhone(statsData.adminPhone);
     }
@@ -131,7 +129,8 @@ export default function DoctorPage() {
     });
   };
 
-  const showLogin = securityMode && !isUserLoggedIn;
+  const securityModeEnabled = statsData?.securityMode === true;
+  const showLogin = !statsLoading && securityModeEnabled && !isUserLoggedIn;
 
   return (
     <main className="min-h-screen bg-[#f8faf9] flex flex-col font-body">

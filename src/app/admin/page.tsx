@@ -89,19 +89,11 @@ export default function AdminPage() {
   const [securityMode, setSecurityMode] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cropPhotoInputRef = useRef<HTMLInputElement>(null);
-
+  
+  // Initialize mount state and admin status once on client side.
   useEffect(() => {
-  setMounted(true);
-
-  const isAdminLocal = localStorage.getItem('isAdmin') === 'true';
-
-  if (!isAdminLocal) {
-    router.push('/'); // not admin → go home
-    return;
-  }
-
-  setIsAdmin(true);
-}, []);
+    setMounted(true);
+  }, []);
   
   // User Management State
   const [users, setUsers] = useState<RegisteredUser[]>([]);
@@ -134,7 +126,6 @@ export default function AdminPage() {
   const { data: statsData } = useDoc(statsRef);
 
   useEffect(() => {
-    setMounted(true);
     const adminStatus = localStorage.getItem('isAdmin') === 'true';
     setIsAdmin(adminStatus);
     
@@ -176,17 +167,26 @@ export default function AdminPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const storedCode = localStorage.getItem('adminLoginCode') || 'adnan@10002';
-    
-    if (userIdInput === 'admin' && loginCodeInput === storedCode) {
-      signInAnonymously(auth).then(() => {
-        localStorage.setItem('isAdmin', 'true');
-        setIsAdmin(true);
-        toast({
-          title: "Login Successful",
-          description: "Welcome back, Admin.",
-        });
+
+    const storedCode = (localStorage.getItem('adminLoginCode') || 'adnan@10002').trim();
+    const enteredUserId = userIdInput.trim().toLowerCase();
+    const enteredLoginCode = loginCodeInput.trim();
+
+    if (enteredUserId === 'admin' && enteredLoginCode === storedCode) {
+      localStorage.setItem('isAdmin', 'true');
+      localStorage.setItem('isUserLoggedIn', 'true');
+      setIsAdmin(true);
+
+      toast({
+        title: "Login Successful",
+        description: "Welcome back, Admin.",
       });
+
+      if (auth) {
+        signInAnonymously(auth).catch((error) => {
+          console.error('Anonymous sign-in failed:', error);
+        });
+      }
     } else {
       toast({
         variant: "destructive",
