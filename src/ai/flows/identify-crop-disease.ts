@@ -47,7 +47,29 @@ const identifyCropDiseaseFlow = ai.defineFlow(
       model: 'googleai/gemini-1.5-flash',
       prompt: [
         {
-          text: `You are an expert agricultural specialist. Analyze this crop image and identify if it's diseased. Provide a detailed analysis in ${input.language || 'English'}.${input.cropType ? ` The crop type is: ${input.cropType}` : ''}`
+          text: `You are an expert agricultural disease specialist and plant pathologist. 
+          
+TASK: Carefully analyze the provided crop image to identify any diseases or health issues.
+
+${input.cropType ? `Crop Type: ${input.cropType}` : 'Analyze the crop type visible in the image'}
+Language: ${input.language || 'English'}
+
+ANALYSIS INSTRUCTIONS:
+1. Examine the image CAREFULLY for ANY signs of disease, pests, nutrient deficiency, or health problems
+2. Look for discoloration, spots, lesions, wilting, yellowing, brown patches, moldy growth, or any abnormalities
+3. Be thorough and DO NOT assume the crop is healthy without clear evidence
+4. Provide honest assessment - if there ARE problems, identify them clearly
+
+RESPOND WITH A JSON OBJECT matching this exact structure:
+{
+  "isDiseased": true/false,
+  "diseaseName": "name of disease or null if healthy",
+  "symptoms": "visible symptoms or null",
+  "confidenceScore": 0.0-1.0,
+  "diagnosticNotes": "detailed observations"
+}
+
+Be accurate and thorough in your analysis.`
         },
         {
           media: {

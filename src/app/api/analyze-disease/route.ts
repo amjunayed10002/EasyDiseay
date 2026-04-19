@@ -1,25 +1,29 @@
-export async function POST(req: Request) {
+import { NextRequest, NextResponse } from 'next/server';
+import { identifyCropDisease } from '@/ai/flows/identify-crop-disease';
+
+export async function POST(request: NextRequest) {
   try {
-    const { prompt } = await req.json();
-    const apiKey = process.env.GEMINI_API_KEY;
+    const { photoDataUri, cropType, language } = await request.json();
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    if (!photoDataUri) {
+      return NextResponse.json(
+        { error: 'Photo data is required' },
+        { status: 400 }
+      );
+    }
 
-    const data = await response.json();
+    const result = await identifyCropDisease({
+      photoDataUri,
+      cropType: cropType || undefined,
+      language: language || 'en',
+    });
 
-    return Response.json(data);
+    return NextResponse.json(result);
   } catch (error) {
-    return Response.json({ error: 'Something went wrong' }, { status: 500 });
+    console.error('Disease analysis error:', error);
+    return NextResponse.json(
+      { error: 'Failed to analyze disease' },
+      { status: 500 }
+    );
   }
 }
