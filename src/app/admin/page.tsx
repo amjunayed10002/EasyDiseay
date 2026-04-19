@@ -159,8 +159,15 @@ export default function AdminPage() {
       localStorage.setItem('supportedCrops', JSON.stringify(defaultCrops));
     }
 
-    const manyMoreStatus = localStorage.getItem('showManyMore') !== 'false';
-    setShowManyMore(manyMoreStatus);
+    // Sync crops with Firestore data
+    if (statsData?.supportedCrops) {
+      setCrops(statsData.supportedCrops);
+    }
+
+    // Sync showManyMore with Firestore data
+    if (statsData?.showManyMore !== undefined) {
+      setShowManyMore(statsData.showManyMore);
+    }
   }, [statsData]);
 
   if (!mounted) return null;
@@ -470,6 +477,13 @@ export default function AdminPage() {
     setCrops(updatedCrops);
     localStorage.setItem('supportedCrops', JSON.stringify(updatedCrops));
     
+    // Save to Firestore for global access
+    if (statsRef) {
+      setDocumentNonBlocking(statsRef, { 
+        supportedCrops: updatedCrops 
+      }, { merge: true });
+    }
+    
     setNewCropNameEn('');
     setNewCropNameBn('');
     setUploadedCropPhoto(null);
@@ -484,6 +498,14 @@ export default function AdminPage() {
     const updatedCrops = crops.filter(c => c.id !== id);
     setCrops(updatedCrops);
     localStorage.setItem('supportedCrops', JSON.stringify(updatedCrops));
+    
+    // Save to Firestore for global access
+    if (statsRef) {
+      setDocumentNonBlocking(statsRef, { 
+        supportedCrops: updatedCrops 
+      }, { merge: true });
+    }
+    
     toast({
       title: "Crop Removed",
       description: "Crop has been removed.",
@@ -493,6 +515,14 @@ export default function AdminPage() {
   const handleDeleteManyMore = () => {
     setShowManyMore(false);
     localStorage.setItem('showManyMore', 'false');
+    
+    // Save to Firestore for global access
+    if (statsRef) {
+      setDocumentNonBlocking(statsRef, { 
+        showManyMore: false 
+      }, { merge: true });
+    }
+    
     toast({
       title: "Removed",
       description: "'Many More' item has been removed.",

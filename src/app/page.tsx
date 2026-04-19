@@ -11,6 +11,8 @@ import React, {useEffect, useState} from 'react';
 import {useLanguage} from '@/components/LanguageProvider';
 import {useAppLogo} from '@/components/AppLogoProvider';
 import {useVisitorCounter} from '@/hooks/use-visitor-counter';
+import {useFirestore, useDoc, useMemoFirebase} from '@/firebase';
+import {doc} from 'firebase/firestore';
 import {
   ShieldPlus, 
   MapPin, 
@@ -45,25 +47,34 @@ export default function HomePage() {
   const [crops, setCrops] = useState<CropItem[]>([]);
   const [showManyMore, setShowManyMore] = useState(true);
 
+  const db = useFirestore();
+  const statsRef = useMemoFirebase(() => doc(db, 'stats', 'main'), [db]);
+  const { data: statsData } = useDoc(statsRef);
+
   useEffect(() => {
     const adminStatus = localStorage.getItem('isAdmin') === 'true';
     setIsAdmin(adminStatus);
 
-    const savedCrops = localStorage.getItem('supportedCrops');
-    if (savedCrops) {
-      setCrops(JSON.parse(savedCrops));
+    // Load crops from Firestore, fallback to localStorage for backward compatibility
+    if (statsData?.supportedCrops) {
+      setCrops(statsData.supportedCrops);
     } else {
-      const defaultCrops: CropItem[] = [
-        { id: '1', nameEn: 'Cucumber', nameBn: 'শসা', icon: '🥒' },
-        { id: '4', nameEn: 'Potato', nameBn: 'আলু', icon: '🥔' },
-        { id: '6', nameEn: 'Tomato', nameBn: 'টমেটো', icon: '🍅' },
-      ];
-      setCrops(defaultCrops);
+      const savedCrops = localStorage.getItem('supportedCrops');
+      if (savedCrops) {
+        setCrops(JSON.parse(savedCrops));
+      } else {
+        const defaultCrops: CropItem[] = [
+          { id: '1', nameEn: 'Cucumber', nameBn: 'শসা', icon: '🥒' },
+          { id: '4', nameEn: 'Potato', nameBn: 'আলু', icon: '🥔' },
+          { id: '6', nameEn: 'Tomato', nameBn: 'টমেটো', icon: '🍅' },
+        ];
+        setCrops(defaultCrops);
+      }
     }
 
-    const manyMoreStatus = localStorage.getItem('showManyMore') !== 'false';
+    const manyMoreStatus = statsData?.showManyMore !== false;
     setShowManyMore(manyMoreStatus);
-  }, []);
+  }, [statsData]);
 
   return (
     <main className="min-h-screen bg-white flex flex-col font-body">
