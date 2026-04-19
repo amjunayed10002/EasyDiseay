@@ -1,31 +1,56 @@
+
 'use server';
 
-import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+/**
+ * TASK: Crop Disease Identification
+ * Purpose: Uses Gemini vision models to analyze crop photos and identify 
+ * symptoms, disease names, and diagnostic confidence.
+ */
+
+import {ai} from '@/ai/genkit';
+import {z} from 'genkit';
 
 const IdentifyCropDiseaseInputSchema = z.object({
-  photoDataUri: z.string(),
-  cropType: z.string().optional(),
-  language: z.string().optional(),
+  photoDataUri: z
+    .string()
+    .describe(
+      "A photo of the crop, as a data URI that must include a MIME type and use Base64 encoding."
+    ),
+  cropType: z
+    .string()
+    .optional()
+    .describe(
+      'The specific type of crop (e.g., Rice, Tomato, Wheat) to aid in identification.'
+    ),
+  language: z.string().optional().describe('The language in which to provide the analysis.'),
 });
+export type IdentifyCropDiseaseInput = z.infer<typeof IdentifyCropDiseaseInputSchema>;
 
 const IdentifyCropDiseaseOutputSchema = z.object({
-  isDiseased: z.boolean(),
-  diseaseName: z.string().nullable(),
-  symptoms: z.string().nullable(),
-  confidenceScore: z.number().nullable(),
-  diagnosticNotes: z.string().optional(),
+  isDiseased: z.boolean().describe('Whether a disease was detected in the crop image.'),
+  diseaseName: z.string().nullable().describe('The name of the identified disease.'),
+  symptoms: z.string().nullable().describe('A description of the symptoms observed.'),
+  confidenceScore: z.number().min(0).max(1).nullable().describe('Confidence score (0-1).'),
+  diagnosticNotes: z.string().optional().describe('Additional reasoning from the expert.'),
 });
+export type IdentifyCropDiseaseOutput = z.infer<typeof IdentifyCropDiseaseOutputSchema>;
 
-export async function identifyCropDisease(input: any) {
-  try {
-    const result = await identifyCropDiseaseFlow(input);
-    return result;
-  } catch (error) {
-    console.error("❌ AI FLOW ERROR:", error);
-    throw new Error("AI analysis failed");
-  }
+export async function identifyCropDisease(input: IdentifyCropDiseaseInput): Promise<IdentifyCropDiseaseOutput> {
+  return identifyCropDiseaseFlow(input);
 }
+
+const prompt = ai.definePrompt({
+  name: 'identifyCropDiseasePrompt',
+  input: {schema: IdentifyCropDiseaseInputSchema},
+  output: {schema: IdentifyCropDiseaseOutputSchema},
+  prompt: `You are an expert agricultural Digital specialist.
+Analyze the provided image to identify potential diseases.
+{{#if cropType}}Crop Type: {{{cropType}}}.{{/if}}
+Language: {{{language}}}.
+
+Photo: {{media url=photoDataUri}}`,
+  model: 'googleai/gemini-2.5-flash',
+});
 
 const identifyCropDiseaseFlow = ai.defineFlow(
   {
@@ -33,62 +58,8 @@ const identifyCropDiseaseFlow = ai.defineFlow(
     inputSchema: IdentifyCropDiseaseInputSchema,
     outputSchema: IdentifyCropDiseaseOutputSchema,
   },
-  async (input) => {
-    // Parse data URI
-    const dataUriMatch = input.photoDataUri.match(/^data:([^;]+);base64,(.+)$/);
-    if (!dataUriMatch) {
-      throw new Error('Invalid data URI format');
-    }
-
-    const contentType = dataUriMatch[1];
-    const base64Data = dataUriMatch[2];
-
-    const result = await ai.generate({
-      model: 'googleai/gemini-1.5-flash',
-      prompt: [
-        {
-          text: `You are an expert agricultural disease specialist and plant pathologist. 
-          
-TASK: Carefully analyze the provided crop image to identify any diseases or health issues.
-
-${input.cropType ? `Crop Type: ${input.cropType}` : 'Analyze the crop type visible in the image'}
-Language: ${input.language || 'English'}
-
-ANALYSIS INSTRUCTIONS:
-1. Examine the image CAREFULLY for ANY signs of disease, pests, nutrient deficiency, or health problems
-2. Look for discoloration, spots, lesions, wilting, yellowing, brown patches, moldy growth, or any abnormalities
-3. Be thorough and DO NOT assume the crop is healthy without clear evidence
-4. Provide honest assessment - if there ARE problems, identify them clearly
-
-RESPOND WITH A JSON OBJECT matching this exact structure:
-{
-  "isDiseased": true/false,
-  "diseaseName": "name of disease or null if healthy",
-  "symptoms": "visible symptoms or null",
-  "confidenceScore": 0.0-1.0,
-  "diagnosticNotes": "detailed observations"
-}
-
-Be accurate and thorough in your analysis.`
-        },
-        {
-          media: {
-            contentType,
-            data: base64Data,
-          }
-        }
-      ],
-      output: {
-        schema: IdentifyCropDiseaseOutputSchema,
-      },
-    });
-
-    return result.output() ?? {
-      isDiseased: false,
-      diseaseName: null,
-      symptoms: null,
-      confidenceScore: null,
-      diagnosticNotes: "No result returned from AI",
-    };
+  async input => {
+    const {output} = await prompt(input);
+    return output!;
   }
 );

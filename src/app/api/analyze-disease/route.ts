@@ -1,28 +1,17 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { identifyCropDisease } from '@/ai/flows/identify-crop-disease';
 
-export async function POST(request: NextRequest) {
+export async function POST(req: Request) {
   try {
-    const { photoDataUri, cropType, language } = await request.json();
+    const body = await req.json();
 
-    if (!photoDataUri) {
-      return NextResponse.json(
-        { error: 'Photo data is required' },
-        { status: 400 }
-      );
-    }
+    const result = await identifyCropDisease(body);
 
-    const result = await identifyCropDisease({
-      photoDataUri,
-      cropType: cropType || undefined,
-      language: language || 'en',
-    });
-
-    return NextResponse.json(result);
+    return Response.json(result);
   } catch (error) {
-    console.error('Disease analysis error:', error);
-    return NextResponse.json(
-      { error: 'Failed to analyze disease' },
+    console.error('API ERROR:', error);
+
+    return Response.json(
+      { error: 'AI analysis failed' },
       { status: 500 }
     );
   }
